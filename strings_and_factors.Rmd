@@ -135,3 +135,56 @@ data_marj %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) #用angle来旋转坐标名称
 ```
 
+```{r}
+data("rest_inspec")
+```
+
+```{r}
+rest_inspec %>% 
+  group_by(boro, grade) %>% 
+  summarise(count = n())
+
+rest_inspec %>% 
+  janitor::tabyl(boro, grade)
+```
+
+```{r}
+rest_inspec = 
+  rest_inspec %>% 
+  filter(
+    str_detect(grade, "[ABC]"),
+    !(boro == "Missing")
+  ) %>% 
+  mutate(boro == str_to_title(boro))
+```
+
+```{r}
+rest_inspec %>% 
+  filter(str_detect(dba, "[Pp][Ii][Zz][Zz][Aa]")) %>% 
+  janitor::tabyl(boro,grade)
+```
+
+```{r}
+rest_inspec %>% 
+  filter(str_detect(dba, "[Pp][Ii][Zz][Zz][Aa]")) %>% 
+  mutate(
+    boro = fct_infreq(boro)
+  ) %>% 
+  ggplot(aes(x = boro, fill = grade)) +
+  geom_bar()
+```
+
+what about changeing a label
+```{r}
+rest_inspec %>% 
+  filter(str_detect(dba, "[Pp][Ii][Zz][Zz][Aa]")) %>% 
+  mutate(
+    boro = fct_infreq(boro),
+    boro = fct_recode(boro, "The City" = "Manhattan")
+  ) %>% 
+  ggplot(aes(x = boro, fill = grade)) +
+  geom_bar()
+
+#有很多fct_ function，使用tab可以看到具体的做法
+```
+
