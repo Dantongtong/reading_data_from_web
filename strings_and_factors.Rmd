@@ -1,0 +1,137 @@
+---
+title: "strings_and_factors"
+author: "Dantong Zhu"
+date: "2021/10/21"
+output: html_document
+---
+
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(p8105.datasets)
+library(rvest)
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_color_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+## String vectors
+```{r}
+string_vec = c("my", "name", "is", "jeff")
+str_detect(string_vec, "Is")
+str_replace(string_vec, "s", "") #后者替换前者内容
+```
+
+```{r}
+string_vec = c(
+  "i think we all rule for participating",
+  "i think i have been caught",
+  "i think this will be quite fun",
+  "it will be fun, i think"
+  )
+str_detect(string_vec, "^i think") #^表示去判断是否at the beginning of line
+str_detect(string_vec, "i think$") #$表示去判断是否在尾部
+```
+
+```{r}
+string_vec = c(
+  "Y'all remember Pres. HW Bush?",
+  "I saw a green bush",
+  "BBQ and Bushwalking at Molonglo Gorge",
+  "BUSH -- LIVE IN CONCERT!!"
+  )
+str_detect(string_vec, "[Bb]ush") #加上bracket表示大小写都接受
+```
+
+```{r}
+string_vec = c(
+  '7th inning stretch',
+  '1st half soon to begin. Texas won the toss.',
+  'she is 5 feet 4 inches tall',
+  '3AM - cant sleep :('
+  )
+str_detect(string_vec, "[0-9][a-zA-Z]") #表示开始找有无数字+字母这种东西
+```
+
+```{r}
+string_vec = c(
+  'Its 7:11 in the evening',
+  'want to go to 7-11?',
+  'my flight is AA711',
+  'NetBios: scanning ip 203.167.114.66'
+  )
+str_detect(string_vec, "7.11") #表示找??
+```
+
+```{r}
+string_vec = c(
+  'The CI is [2, 5]',
+  ':-]',
+  ':-[',
+  'I found the answer on pages [6-7]'
+  )
+str_detect(string_vec, "\\[") #不能直接找【，因为【有本身意义;同时\也有意义，所以要再加一个\
+```
+
+
+## Factors are weird
+
+```{r}
+factor_vec = factor(c("male", "male", "female", "female"))
+factor_vec
+as.numeric(factor_vec)
+
+factor_vec = fct_relevel(factor_vec, "male") #改变level
+as.numeric(factor_vec)
+```
+
+## NSDUH -- strings
+
+```{r}
+url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+tabl_marj = 
+  read_html(url) %>% 
+  html_nodes(css = "table") %>% 
+  first() %>% 
+  html_table() %>% 
+  slice(-1) %>% 
+  as_tibble()
+```
+
+```{r}
+data_marj = 
+  tabl_marj %>% 
+  select(-contains("P Value")) %>% 
+  pivot_longer(
+    -State,
+    names_to = "age_year",
+    values_to = "percent") %>% 
+  separate(age_year, into = c("age", "year"), "\\(") %>% 
+  mutate(
+    year = str_replace(year, "\\)", ""),
+    percent = str_replace(percent, "[a-c]$", ""), #去掉a直接替换为空
+    percent = as.numeric(percent)
+  ) %>% 
+  filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+data_marj
+```
+
+## do dataframe stuff
+```{r}
+data_marj %>% 
+  filter(age == "12-17") %>% 
+  mutate(State = fct_reorder(State, percent)) %>% #允许state按照percent的顺序排列
+  ggplot(aes(State, y = percent, color = year)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) #用angle来旋转坐标名称
+```
+
